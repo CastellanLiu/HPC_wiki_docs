@@ -13,18 +13,21 @@
 #PBS -e /home/username/myjob1.err
 #PBS -l nodes=1:ppn=1:gpus=1
 #PBS -r y
-cd $PBS_O_WORKDIR
-echo Time is `date`
+
+cd $PBS_O_WORKDIR  #需要进入到实际代码目录
+
+echo Time is `date` # 打印一些log信息
 echo Directory is $PWD
 echo This job runs on following nodes:
 cat $PBS_NODEFILE
 cat $PBS_GPUFILE
-./my_proc
+
+./my_proc  # 实际工作程序
 ```
 
 
 注意最开始几行`#PBS`中的`#`不是shell脚本中的注释符号， `#PBS`表明本行之后为定义参数。  
-
+申请资源的参数是小写字母`l`
 
 torque可指定的参数及解释:
 
@@ -42,34 +45,41 @@ option | meaning
 `-m` | m(ail) 指定何种情况发送邮件（邮件功能暂未开放, 此选项暂时无效)
 
 
-如果没有指定标准输出和错误输出文件，在用户提交作业的目录下将会生成`jobname`.o`jobid` 和`jobname`.e`jobid`两个文件来收集这两个信息。
-> `注意，如果您预料到标准输出/错误输出会很大，建议您减少输出或者将输出丢弃。并将有用的结果在程序中保存到别的文件中去。`   
-  
-关于`-l` 的详细说明：
-```
-   nodes=X:ppn=Y:gpus=Z  
-   nodes=X 指定使用X个节点. 也可以指定nodes=nodeX (X可取1..6)  
-   如果使用nodes=nodeX 指定的方式，请先查看[/jobs](jobs.md)获得可用节点的信息   
-   或者使用本节后面的`pbsnodes -l free`命令，以免造成不必要的排队等待。  
+!!! Note
+    如果没有指定标准输出和错误输出文件，在用户提交作业的目录下将会生成`jobname.o${jobid}` 和`jobname.e${jobid}`两个文件来收集这两个信息。
 
+    注意，如果您预料到标准输出/错误输出会很大，建议您减少输出或者将输出丢弃。并将有用的结果在程序中保存到别的文件中去。   
+ 
+!!! Note 
+    关于`-l` 的详细说明：
 
-   ppn=Y 指定每个节点使用CPU的数量(processor per node)  
-   gpus=Z 指定使用GPU的数量  
+    nodes=X:ppn=Y:gpus=Z  
 
-   对于不支持多机并行的框架，应选择nodes=1, 且gpus的上限为8. 
-   受限于编译支持多机并行特性较为复杂，目前caffe/MATLAB/pytorch采用上述单机多GPU的方式。  
+    nodes=X 指定使用X个节点. 也可以指定nodes=nodeX (X可取1/2/..6)  
+    如果使用nodes=nodeX 指定的方式，请先查看[/jobs](http://219.217.238.193/jobs)获得可用节点的信息   
+    或者使用本节后面的`pbsnodes -l free`命令，以免造成不必要的排队等待。  
 
-   ppn=Y 的上限为16  
+    ppn=Y 指定每个节点使用CPU的数量(processor per node)  
+    ppn=Y 的上限为32  
 
-   推荐按照ppn:gpus = 2:1的比例来申请资源
-     
-```
+    gpus=Z 指定使用GPU的数量  
 
+    对于不支持多机并行的框架，应选择nodes=1, 且gpus的上限为8. 
+    受限于编译支持多机并行特性较为复杂，目前caffe/MATLAB/pytorch采用上述单机多GPU的方式。  
+
+    推荐按照ppn:gpus = 4:1的比例来申请资源, 实际申请数量可以根据当前排队情况和您的程序资源消耗偏向自行斟酌
+
+!!! Note
+    计算节点分配到任务后的起始目录为你的`$HOME`目录，如果你的`$HOME`目录下面，某个`projectA`文件夹里面才是你的实际工作代码的话，请参考上面的例子，加入`cd projectA`一行。更多层的目录也是如此。 
+    
 ## 作业提交
 使用`qsub`命令提交写好的`psb`脚本文件(submit)：  
 `qsub run_job_demo.pbs`    
 
 提交后可能需要十几秒的时间您的作业才会被轮询调度到排队队列中。硬件资源充足的情况下也会如此。
+
+!!! Warning
+    如果计算资源充足的情况下，您的计算作业一直不能开始运行，请联系管理员。
 
 ## 作业状态查看
 ### `qstat`
@@ -103,7 +113,14 @@ W   | Waiting 作业正在等待执行时间到来(PBS脚本中 -a 选项可指�
 * `qstat job1, job2 ...` 查看多个作业的信息
 * `qstat -f jobid` 查看作业ID=`jobid`的作业的详细信息
 * `qstat -u userabc` 查看用户名=`userabc`的用户的作业
- 
+
+### qstat 自动刷新
+`watch -n 5 qstat` 将每隔5s在终端中自动刷新一次qstat输出
+`-n` 后加你希望的刷新秒数
+
+### /jobs页面
+请到[系统监测](systemWatch.md)一节继续阅读
+
 
 ## 其它作业命令
 ### 挂起 qhold
